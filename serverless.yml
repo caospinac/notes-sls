@@ -1,0 +1,89 @@
+service: notes-sls
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: go1.x
+  region: us-east-1
+  environment:
+    REGION: ${self:provider.region}
+    BOARDS_TABLE: BoardsTable
+
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:Query
+        - dynamodb:PutItem
+        - dynamodb:UpdateItem
+        - dynamodb:DeleteItem
+        - dynamodb:Scan
+      Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BOARDS_TABLE}
+
+package:
+  patterns:
+    - '!./**'
+    - ./bin/**
+
+functions:
+  ping:
+    handler: bin/event
+    events:
+      - httpApi:
+          path: /event
+          method: get
+
+  boardCreate:
+    handler: bin/board/create
+    events:
+      - httpApi:
+          path: /board/new
+          method: post
+
+  boardGet:
+    handler: bin/board/get
+    events:
+      - httpApi:
+          path: /board/{id}
+          method: get
+
+  boardGetAll:
+    handler: bin/board/get_all
+    events:
+      - httpApi:
+          path: /boards
+          method: get
+
+  boardUpdate:
+    handler: bin/board/update
+    events:
+      - httpApi:
+          path: /board/{id}
+          method: put
+
+  boardDelete:
+    handler: bin/board/delete
+    events:
+      - httpApi:
+          path: /board/{id}
+          method: delete
+
+resources:
+  Resources:
+    BoardsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.BOARDS_TABLE}
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
