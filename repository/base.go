@@ -35,14 +35,16 @@ func (r *repo) getItem(ctx context.Context, input *dynamodb.GetItemInput, output
 	result, err := r.dbClient.GetItem(ctx, input)
 
 	if err != nil {
-		return fmt.Errorf("failed to get item from DynamoDB: %w", err)
+		return fmt.Errorf("failed to GetItem from DynamoDB: %w", err)
 	}
 
 	if len(result.Item) == 0 {
 		return nil
 	}
 
-	err = attributevalue.UnmarshalMap(result.Item, output)
+	if err := attributevalue.UnmarshalMap(result.Item, output); err != nil {
+		return fmt.Errorf("failed to unmarshal data from DynamoDB: %w", err)
+	}
 
 	return nil
 }
@@ -51,11 +53,10 @@ func (r *repo) scan(ctx context.Context, input *dynamodb.ScanInput, output inter
 	result, err := r.dbClient.Scan(ctx, input)
 
 	if err != nil {
-		return fmt.Errorf("failed to get items from DynamoDB: %w", err)
+		return fmt.Errorf("failed to Scan from DynamoDB: %w", err)
 	}
 
-	err = attributevalue.UnmarshalListOfMaps(result.Items, output)
-	if err != nil {
+	if err := attributevalue.UnmarshalListOfMaps(result.Items, output); err != nil {
 		return fmt.Errorf("failed to unmarshal data from DynamoDB: %w", err)
 	}
 
@@ -90,7 +91,7 @@ func (r *repo) deleteItem(ctx context.Context, input *dynamodb.DeleteItemInput) 
 	_, err := r.dbClient.DeleteItem(ctx, input)
 
 	if err != nil {
-		return fmt.Errorf("can't delete item: %w", err)
+		return fmt.Errorf("cannot delete item: %w", err)
 	}
 
 	return nil

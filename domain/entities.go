@@ -6,8 +6,8 @@ type Board struct {
 }
 
 type Note struct {
-	ID          string `json:"id" dynamodbav:"id"`
 	BoardID     string `json:"board_id" dynamodbav:"board_id"`
+	NoteID      string `json:"note_id" dynamodbav:"note_id"`
 	Title       string `json:"title" dynamodbav:"title"`
 	Description string `json:"description" dynamodbav:"description"`
 }

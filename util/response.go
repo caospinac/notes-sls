@@ -28,13 +28,10 @@ type responseBuilder struct {
 }
 
 func NewResponse() Response {
-	functionName := whoami(1)
-
 	return &responseBuilder{
 		status: http.StatusOK,
 		headers: map[string]string{
 			"Content-Type": "application/json",
-			"Func-Reply":   functionName,
 		},
 	}
 }

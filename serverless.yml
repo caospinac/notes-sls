@@ -5,10 +5,12 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: go1.x
+  stage: ${opt:stage, 'dev'}
   region: us-east-1
   environment:
     REGION: ${self:provider.region}
     BOARDS_TABLE: BoardsTable
+    NOTES_TABLE: NotesTable
 
   iamRoleStatements:
     - Effect: Allow
@@ -21,6 +23,7 @@ provider:
         - dynamodb:Scan
       Resource:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BOARDS_TABLE}
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTES_TABLE}
 
 package:
   patterns:
@@ -28,12 +31,6 @@ package:
     - ./bin/**
 
 functions:
-  ping:
-    handler: bin/event
-    events:
-      - httpApi:
-          path: /event
-          method: get
 
   boardCreate:
     handler: bin/board/create
@@ -70,6 +67,41 @@ functions:
           path: /board/{id}
           method: delete
 
+  noteCreate:
+    handler: bin/note/create
+    events:
+      - httpApi:
+          path: /board/{boardID}/note/new
+          method: post
+
+  noteGet:
+    handler: bin/note/get
+    events:
+      - httpApi:
+          path: /board/{boardID}/note/{noteID}
+          method: get
+
+  noteGetAll:
+    handler: bin/note/get_all
+    events:
+      - httpApi:
+          path: /board/{boardID}/notes
+          method: get
+
+  noteUpdate:
+    handler: bin/note/update
+    events:
+      - httpApi:
+          path: /board/{boardID}/note/{noteID}
+          method: put
+
+  noteDelete:
+    handler: bin/note/delete
+    events:
+      - httpApi:
+          path: /board/{boardID}/note/{noteID}
+          method: delete
+
 resources:
   Resources:
     BoardsTable:
@@ -85,5 +117,25 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
         TableName: ${self:provider.environment.BOARDS_TABLE}
+        StreamSpecification:
+          StreamViewType: NEW_IMAGE
+
+    NotesTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+        - AttributeName: board_id
+          AttributeType: S
+        - AttributeName: note_id
+          AttributeType: S
+        KeySchema:
+        - AttributeName: board_id
+          KeyType: HASH
+        - AttributeName: note_id
+          KeyType: RANGE
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TableName: ${self:provider.environment.NOTES_TABLE}
         StreamSpecification:
           StreamViewType: NEW_IMAGE

@@ -47,8 +47,12 @@ func (r *boardRepo) Get(ctx context.Context, id string) (*domain.Board, error) {
 		},
 	}
 	board := new(domain.Board)
-	if err := r.getItem(ctx, input, board); err != nil {
+	if err := r.getItem(ctx, input, &board); err != nil {
 		return nil, err
+	}
+
+	if board.ID == "" {
+		return nil, nil
 	}
 
 	return board, nil
@@ -62,7 +66,7 @@ func (r *boardRepo) GetAll(ctx context.Context) ([]domain.Board, error) {
 	}
 
 	boards := make([]domain.Board, 0)
-	if err := r.scan(ctx, input, boards); err != nil {
+	if err := r.scan(ctx, input, &boards); err != nil {
 		return nil, err
 	}
 

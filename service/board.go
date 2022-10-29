@@ -24,7 +24,7 @@ type boardService struct {
 
 func NewBoardService(repo repository.BoardRepo) BoardService {
 	return &boardService{
-		repo: repo,
+		repo,
 	}
 }
 
@@ -35,7 +35,7 @@ func (s *boardService) CreateDefault(ctx context.Context) (*domain.Board, util.A
 	}
 	err := s.repo.Create(ctx, newBoard)
 	if err != nil {
-		return nil, util.NewApiError()
+		return nil, util.ToApiError(err)
 	}
 
 	return &newBoard, nil
@@ -53,7 +53,7 @@ func (s *boardService) GetAll(ctx context.Context) ([]domain.Board, util.ApiErro
 func (s *boardService) Get(ctx context.Context, id string) (*domain.Board, util.ApiError) {
 	board, err := s.repo.Get(ctx, id)
 	if err != nil {
-		return nil, util.NewApiError()
+		return nil, util.ToApiError(err)
 	}
 
 	if board == nil {
@@ -73,9 +73,8 @@ func (s *boardService) Update(ctx context.Context, id string, newData domain.Upd
 }
 
 func (s *boardService) Delete(ctx context.Context, id string) util.ApiError {
-	err := s.repo.Delete(ctx, id)
-	if err != nil {
-		return util.NewApiError()
+	if err := s.repo.Delete(ctx, id); err != nil {
+		return util.ToApiError(err)
 	}
 
 	return nil

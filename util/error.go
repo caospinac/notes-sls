@@ -1,6 +1,7 @@
 package util
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/caospinac/notes-sls/domain"
@@ -10,6 +11,7 @@ type ApiError interface {
 	WithStatus(int) ApiError
 	WithMessage(string) ApiError
 
+	getMessage() string
 	build() *domain.EventResponse
 }
 
@@ -36,7 +38,13 @@ func (b *apiErrorBuilder) WithMessage(message string) ApiError {
 	return b
 }
 
+func (b *apiErrorBuilder) getMessage() string {
+	return b.message
+}
+
 func (b *apiErrorBuilder) build() *domain.EventResponse {
+	log.Printf("status:%d message:%s", b.status, b.message)
+
 	return NewResponse().
 		WithStatus(b.status).
 		WithMessage(b.message).
