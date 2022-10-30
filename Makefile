@@ -20,3 +20,6 @@ deploy: clean build
 
 remove: clean
 	sls remove --verbose
+
+deploy-function: clean build
+	sls deploy function -f ${name}

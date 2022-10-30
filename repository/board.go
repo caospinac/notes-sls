@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/caospinac/notes-sls/db"
@@ -74,19 +75,27 @@ func (r *boardRepo) GetAll(ctx context.Context) ([]domain.Board, error) {
 }
 
 func (r *boardRepo) Update(ctx context.Context, id string, board domain.UpdateBoardRequest) error {
+	filter := expression.AttributeExists(expression.Name("id"))
+	update := expression.Set(expression.Name("title"), expression.Value(&types.AttributeValueMemberS{Value: board.Title}))
+
+	expr, err := expression.NewBuilder().
+		WithCondition(filter).
+		WithUpdate(update).
+		Build()
+
+	if err != nil {
+		return err
+	}
+
 	input := &dynamodb.UpdateItemInput{
 		TableName: &r.tableName,
 		Key: map[string]types.AttributeValue{
 			"id": &types.AttributeValueMemberS{Value: id},
 		},
-		AttributeUpdates: map[string]types.AttributeValueUpdate{
-			"title": {
-				Action: types.AttributeActionPut,
-				Value: &types.AttributeValueMemberS{
-					Value: board.Title,
-				},
-			},
-		},
+		ConditionExpression:       expr.Condition(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		UpdateExpression:          expr.Update(),
 	}
 
 	if err := r.updateItem(ctx, input); err != nil {

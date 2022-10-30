@@ -25,7 +25,7 @@ func boardUpdate(ctx context.Context, event domain.EventRequest) (util.Response,
 
 	err := svc.Update(ctx, event.PathParameters["id"], *newData)
 	if err != nil {
-		return nil, util.NewApiError()
+		return nil, err
 	}
 
 	return res, nil

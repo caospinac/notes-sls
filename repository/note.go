@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/caospinac/notes-sls/db"
@@ -65,26 +66,32 @@ func (r *noteRepo) GetAll(ctx context.Context, boardID string) ([]domain.Note, e
 }
 
 func (r *noteRepo) Update(ctx context.Context, boardID, noteID string, note domain.UpdateNoteRequest) error {
+	filter := expression.And(
+		expression.AttributeExists(expression.Name("board_id")), expression.AttributeExists(expression.Name("note_id")),
+	)
+	update := expression.
+		Set(expression.Name("title"), expression.Value(&types.AttributeValueMemberS{Value: note.Title})).
+		Set(expression.Name("description"), expression.Value(&types.AttributeValueMemberS{Value: note.Description}))
+
+	expr, err := expression.NewBuilder().
+		WithCondition(filter).
+		WithUpdate(update).
+		Build()
+
+	if err != nil {
+		return err
+	}
+
 	input := &dynamodb.UpdateItemInput{
 		TableName: &r.tableName,
 		Key: map[string]types.AttributeValue{
 			"board_id": &types.AttributeValueMemberS{Value: boardID},
 			"note_id":  &types.AttributeValueMemberS{Value: noteID},
 		},
-		AttributeUpdates: map[string]types.AttributeValueUpdate{
-			"title": {
-				Action: types.AttributeActionPut,
-				Value: &types.AttributeValueMemberS{
-					Value: note.Title,
-				},
-			},
-			"description": {
-				Action: types.AttributeActionPut,
-				Value: &types.AttributeValueMemberS{
-					Value: note.Description,
-				},
-			},
-		},
+		ConditionExpression:       expr.Condition(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		UpdateExpression:          expr.Update(),
 	}
 
 	if err := r.updateItem(ctx, input); err != nil {
