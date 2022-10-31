@@ -31,7 +31,7 @@ func (s *noteService) CreateDefault(ctx context.Context, boardID string) (*domai
 	newNote := domain.Note{
 		BoardID: boardID,
 		NoteID:  fmt.Sprint(time.Now().UnixMilli()),
-		Title:   "New note",
+		Title:   "",
 	}
 	err := s.repo.Create(ctx, newNote)
 	if err != nil {

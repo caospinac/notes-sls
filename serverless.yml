@@ -25,6 +25,11 @@ provider:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BOARDS_TABLE}
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTES_TABLE}
 
+  httpApi:	
+    cors:
+      allowedOrigins:
+        - http://localhost:3000
+
 package:
   patterns:
     - '!./**'
