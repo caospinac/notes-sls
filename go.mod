@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression v1.4.28
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.17.3
 	github.com/google/uuid v1.3.0
+	github.com/speps/go-hashids/v2 v2.0.1
 )
 
 require (

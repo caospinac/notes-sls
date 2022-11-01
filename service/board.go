@@ -7,7 +7,6 @@ import (
 	"github.com/caospinac/notes-sls/domain"
 	"github.com/caospinac/notes-sls/repository"
 	"github.com/caospinac/notes-sls/util"
-	"github.com/google/uuid"
 )
 
 type BoardService interface {
@@ -30,10 +29,9 @@ func NewBoardService(repo repository.BoardRepo) BoardService {
 
 func (s *boardService) CreateDefault(ctx context.Context) (*domain.Board, util.ApiError) {
 	newBoard := domain.Board{
-		ID:   uuid.NewString(),
 		Name: "Untitled",
 	}
-	err := s.repo.Create(ctx, newBoard)
+	err := s.repo.Create(ctx, &newBoard)
 	if err != nil {
 		return nil, util.ToApiError(err)
 	}

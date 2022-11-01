@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"fmt"
-	"time"
 
 	"github.com/caospinac/notes-sls/domain"
 	"github.com/caospinac/notes-sls/repository"
@@ -28,12 +26,8 @@ func NewNoteService(repo repository.NoteRepo) NoteService {
 }
 
 func (s *noteService) CreateDefault(ctx context.Context, boardID string) (*domain.Note, util.ApiError) {
-	newNote := domain.Note{
-		BoardID: boardID,
-		NoteID:  fmt.Sprint(time.Now().UnixMilli()),
-		Title:   "",
-	}
-	err := s.repo.Create(ctx, newNote)
+	newNote := domain.Note{}
+	err := s.repo.Create(ctx, boardID, &newNote)
 	if err != nil {
 		return nil, util.ToApiError(err)
 	}

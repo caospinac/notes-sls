@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/caospinac/notes-sls/db"
 	"github.com/caospinac/notes-sls/domain"
+	"github.com/caospinac/notes-sls/helper"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 type BoardRepo interface {
-	Create(context.Context, domain.Board) error
+	Create(context.Context, *domain.Board) error
 	Get(context.Context, string) (*domain.Board, error)
 	GetAll(context.Context) ([]domain.Board, error)
 	Update(context.Context, string, domain.UpdateBoardRequest) error
@@ -36,8 +37,10 @@ type boardRepo struct {
 	repo
 }
 
-func (r *boardRepo) Create(ctx context.Context, board domain.Board) error {
-	return r.createItem(ctx, &board)
+func (r *boardRepo) Create(ctx context.Context, board *domain.Board) error {
+	board.ID = helper.NewUniqueID()
+
+	return r.createItem(ctx, board)
 }
 
 func (r *boardRepo) Get(ctx context.Context, id string) (*domain.Board, error) {

@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 	"github.com/caospinac/notes-sls/db"
 	"github.com/caospinac/notes-sls/domain"
+	"github.com/caospinac/notes-sls/helper"
 )
 
 var (
@@ -16,7 +17,7 @@ var (
 )
 
 type NoteRepo interface {
-	Create(context.Context, domain.Note) error
+	Create(context.Context, string, *domain.Note) error
 	GetAll(context.Context, string) ([]domain.Note, error)
 	Update(context.Context, string, string, domain.UpdateNoteRequest) error
 	Delete(context.Context, string, string) error
@@ -35,7 +36,10 @@ func NewNoteRepo() NoteRepo {
 	}
 }
 
-func (r *noteRepo) Create(ctx context.Context, note domain.Note) error {
+func (r *noteRepo) Create(ctx context.Context, boardID string, note *domain.Note) error {
+	note.BoardID = boardID
+	note.NoteID = helper.NewUniqueID()
+
 	return r.createItem(ctx, &note)
 }
 
