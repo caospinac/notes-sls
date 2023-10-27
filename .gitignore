@@ -18,3 +18,8 @@ bin
 *.out
 
 node_modules
+
+# Environment
+.env
+env.*.json
+!env.ex.json
