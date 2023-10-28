@@ -9,8 +9,8 @@ provider:
   region: us-east-1
   environment:
     REGION: ${self:provider.region}
-    BOARDS_TABLE: BoardsTable
-    NOTES_TABLE: NotesTable
+    DYNAMODB_TABLE_BOARDS: boards-${self:provider.stage}
+    DYNAMODB_TABLE_NOTES: notes-${self:provider.stage}
 
   iamRoleStatements:
     - Effect: Allow
@@ -22,10 +22,10 @@ provider:
         - dynamodb:DeleteItem
         - dynamodb:Scan
       Resource:
-        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.BOARDS_TABLE}
-        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.NOTES_TABLE}
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_BOARDS}
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NOTES}
 
-  httpApi:	
+  httpApi:
     cors:
       allowedOrigins:
         - http://localhost:3000
@@ -109,7 +109,7 @@ functions:
 
 resources:
   Resources:
-    BoardsTable:
+    TableBoard:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
@@ -121,11 +121,11 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.BOARDS_TABLE}
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_BOARDS}
         StreamSpecification:
           StreamViewType: NEW_IMAGE
 
-    NotesTable:
+    TableNote:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
@@ -141,6 +141,6 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.NOTES_TABLE}
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_NOTES}
         StreamSpecification:
           StreamViewType: NEW_IMAGE

@@ -15,16 +15,12 @@ help:
 	@echo "  - help:            Display this help message."
 
 build:
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/board/create handler/board/create/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/board/get handler/board/get/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/board/get_all handler/board/get_all/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/board/update handler/board/update/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/board/delete handler/board/delete/main.go
-
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/note/create handler/note/create/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/note/get_all handler/note/get_all/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/note/update handler/note/update/main.go
-	env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o bin/note/delete handler/note/delete/main.go
+	@for file in $(shell find cmd/func -name 'main.go') ; do \
+		target=bin/$${file#cmd/func/}; \
+		target=$${target%/main.go}; \
+		echo "$${target#bin/}"; \
+		env GOARCH=amd64 GOOS=linux go build -ldflags="-s -w" -o $$target $$file; \
+	done
 
 clean:
 	rm -rf ./bin
@@ -35,8 +31,9 @@ deploy: clean build
 deploy-built:
 	sls deploy --verbose
 
-deploy-function: clean build
-	sls deploy function -f ${name}
-
+# deploy-function-{{functionName}}
+deploy-function-%: clean build
+	sls deploy function -f $*
+	
 remove: clean
 	sls remove --verbose
