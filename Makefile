@@ -26,14 +26,14 @@ clean:
 	rm -rf ./bin
 
 deploy: clean build
-	sls deploy --verbose
+	npx serverless deploy --verbose --param="mongodb_uri=${MONGODB_URI}"
 
 deploy-built:
-	sls deploy --verbose
+	npx serverless deploy --verbose --param="mongodb_uri=${MONGODB_URI}"
 
 # deploy-function-{{functionName}}
 deploy-function-%: clean build
-	sls deploy function -f $*
+	npx serverless deploy function -f $*
 	
 remove: clean
-	sls remove --verbose
+	npx serverless remove --verbose

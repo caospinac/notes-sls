@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"reflect"
 	"runtime"
 )
@@ -19,7 +20,7 @@ func WhoAmI(skip int) string {
 	return me.Name()
 }
 
-func IsEmptyValue(x any) bool {
+func IsJSONBody(x any) bool {
 	v := reflect.ValueOf(x)
 	switch v.Kind() {
 	case reflect.Array, reflect.Map, reflect.Slice, reflect.String:
@@ -36,4 +37,35 @@ func IsEmptyValue(x any) bool {
 		return v.IsNil()
 	}
 	return false
+}
+
+func getBodyString(body any) string {
+	var responseBytes []byte
+
+	value := reflect.ValueOf(body)
+	switch value.Kind() {
+	case reflect.String:
+		responseBytes = []byte(body.(string))
+	case reflect.Array, reflect.Slice:
+		if value.Type().Elem().Kind() == reflect.Uint8 {
+			responseBytes = value.Bytes()
+		} else {
+			responseBytes, _ = json.Marshal(body)
+		}
+	case reflect.Pointer:
+		if value.Type().Elem().Kind() == reflect.String {
+			strPtr := value.Interface().(*string)
+			if strPtr != nil {
+				responseBytes = []byte(*strPtr)
+				break
+			}
+		}
+		fallthrough
+	default:
+		if body != nil {
+			responseBytes, _ = json.Marshal(body)
+		}
+	}
+
+	return string(responseBytes)
 }

@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +10,7 @@ import (
 type ApiError interface {
 	WithMessage(string) ApiError
 	WithCode(int) ApiError
+	Error() error
 
 	getCode() string
 	build() *EventResponse
@@ -42,6 +44,10 @@ func (b *apiErrorBuilder) WithCode(code int) ApiError {
 	b.code = code
 
 	return b
+}
+
+func (b *apiErrorBuilder) Error() error {
+	return errors.New(b.message)
 }
 
 func (b *apiErrorBuilder) getCode() string {

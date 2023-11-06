@@ -2,112 +2,96 @@ package repository
 
 import (
 	"context"
-	"os"
+	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+
+	"github.com/caospinac/notes-sls/internal/defines"
 	"github.com/caospinac/notes-sls/internal/domain"
 	"github.com/caospinac/notes-sls/internal/repository/helper"
+	"github.com/caospinac/notes-sls/pkg/util"
 )
 
-var (
-	boardsTableName = os.Getenv("DYNAMODB_TABLE_BOARDS")
-)
-
-type BoardRepo interface {
-	Create(context.Context, *domain.Board) error
-	Get(context.Context, string) (*domain.Board, error)
-	GetAll(context.Context) ([]domain.Board, error)
-	Update(context.Context, string, domain.UpdateBoardRequest) error
-	Delete(context.Context, string) error
+type BoardsRepo interface {
+	Insert(context.Context, *domain.Board) (string, util.ApiError)
+	FindOne(context.Context, string) (*domain.Board, util.ApiError)
+	Update(context.Context, string, *domain.Board) util.ApiError
+	Delete(context.Context, string) util.ApiError
 }
 
-func NewBoardRepo(dbClient *dynamodb.Client) BoardRepo {
-	return &boardRepo{
-		repo{
-			dbClient,
-			boardsTableName,
-		},
+type boardsRepo struct {
+	collection      *mongo.Collection
+	notesCollection *mongo.Collection
+}
+
+func NewBoardsRepo(dbClient *mongo.Database) BoardsRepo {
+	collection := dbClient.Collection(defines.CollectionBoards)
+	notesCollection := dbClient.Collection(defines.CollectionNotes)
+	return &boardsRepo{
+		collection,
+		notesCollection,
 	}
 }
 
-type boardRepo struct {
-	repo
-}
-
-func (r *boardRepo) Create(ctx context.Context, board *domain.Board) error {
-	board.ID = helper.NewUniqueID()
-
-	return r.createItem(ctx, board)
-}
-
-func (r *boardRepo) Get(ctx context.Context, id string) (*domain.Board, error) {
-	board := new(domain.Board)
-	if err := r.getItem(ctx, domain.Board{ID: id}, &board); err != nil {
-		return nil, err
-	}
-
-	if board.ID == "" {
-		return nil, nil
-	}
-
-	return board, nil
-}
-
-func (r *boardRepo) GetAll(ctx context.Context) ([]domain.Board, error) {
-	var limit int32 = 20 // TODO: pagination
-	input := &dynamodb.ScanInput{
-		TableName: &r.tableName,
-		Limit:     &limit,
-	}
-
-	boards := make([]domain.Board, 0)
-	if err := r.scan(ctx, input, &boards); err != nil {
-		return nil, err
-	}
-
-	return boards, nil
-}
-
-func (r *boardRepo) Update(ctx context.Context, id string, board domain.UpdateBoardRequest) error {
-	filter := expression.AttributeExists(expression.Name("id"))
-	update := expression.Set(expression.Name("title"), expression.Value(&types.AttributeValueMemberS{Value: board.Title}))
-
-	expr, err := expression.NewBuilder().
-		WithCondition(filter).
-		WithUpdate(update).
-		Build()
-
+func (repo boardsRepo) Insert(ctx context.Context, document *domain.Board) (string, util.ApiError) {
+	document.ID = primitive.NewObjectID()
+	result, err := repo.collection.InsertOne(ctx, document)
 	if err != nil {
-		return err
+		return "", util.ToApiError(err)
 	}
 
-	input := &dynamodb.UpdateItemInput{
-		TableName: &r.tableName,
-		Key: map[string]types.AttributeValue{
-			"id": &types.AttributeValueMemberS{Value: id},
-		},
-		ConditionExpression:       expr.Condition(),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		UpdateExpression:          expr.Update(),
-	}
-
-	if err := r.updateItem(ctx, input); err != nil {
-		return err
-	}
-
-	return nil
+	return result.InsertedID.(primitive.ObjectID).Hex(), nil
 }
 
-func (r *boardRepo) Delete(ctx context.Context, id string) error {
-	input := &dynamodb.DeleteItemInput{
-		TableName: &r.tableName,
-		Key: map[string]types.AttributeValue{
-			"id": &types.AttributeValueMemberS{Value: id},
-		},
+func (repo boardsRepo) FindOne(ctx context.Context, ID string) (*domain.Board, util.ApiError) {
+	objectID, errObjectID := primitive.ObjectIDFromHex(ID)
+	if errObjectID != nil {
+		return nil, util.NewApiError(http.StatusBadRequest)
 	}
 
-	return r.deleteItem(ctx, input)
+	result := repo.collection.FindOne(ctx, helper.FilterID(objectID))
+	document := new(domain.Board)
+	if err := helper.SingleResult(result, document); err != nil {
+		return nil, err
+	}
+
+	return document, nil
+}
+
+func (repo boardsRepo) Update(ctx context.Context, ID string, update *domain.Board) util.ApiError {
+	objectID, errObjectID := primitive.ObjectIDFromHex(ID)
+	if errObjectID != nil {
+		return util.NewApiError(http.StatusBadRequest)
+	}
+
+	result := repo.collection.FindOneAndUpdate(ctx, helper.FilterID(objectID), update)
+
+	return helper.SingleResult(result, nil)
+}
+
+func (repo boardsRepo) Delete(ctx context.Context, ID string) util.ApiError {
+	objectID, errObjectID := primitive.ObjectIDFromHex(ID)
+	if errObjectID != nil {
+		return util.NewApiError(http.StatusBadRequest)
+	}
+
+	err := helper.WithSession(ctx, repo.collection.Database().Client(), func() error {
+		result := repo.collection.FindOneAndDelete(ctx, helper.FilterID(objectID))
+		deletedBoard := new(domain.Board)
+		if err := helper.SingleResult(result, deletedBoard); err != nil {
+			return err.Error()
+		}
+
+		notesFilter := helper.FilterID(bson.M{"$in": deletedBoard.NoteIDs})
+		_, err := repo.notesCollection.DeleteMany(ctx, notesFilter)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }

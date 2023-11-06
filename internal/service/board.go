@@ -4,54 +4,53 @@ import (
 	"context"
 	"net/http"
 
+	"go.mongodb.org/mongo-driver/bson/primitive"
+
 	"github.com/caospinac/notes-sls/internal/domain"
 	"github.com/caospinac/notes-sls/internal/repository"
+	"github.com/caospinac/notes-sls/internal/service/helper"
 	"github.com/caospinac/notes-sls/pkg/util"
 )
 
 type BoardService interface {
-	CreateDefault(context.Context) (*domain.Board, util.ApiError)
+	CreateDefault(context.Context) (*string, util.ApiError)
 	GetAll(context.Context) ([]domain.Board, util.ApiError)
 	Get(context.Context, string) (*domain.Board, util.ApiError)
-	Update(context.Context, string, domain.UpdateBoardRequest) util.ApiError
+	Update(context.Context, string, *domain.PutBoardRequest) util.ApiError
 	Delete(context.Context, string) util.ApiError
 }
 
 type boardService struct {
-	repo repository.BoardRepo
+	repo repository.BoardsRepo
 }
 
-func NewBoardService(repo repository.BoardRepo) BoardService {
+func NewBoardService(repo repository.BoardsRepo) BoardService {
 	return &boardService{
 		repo,
 	}
 }
 
-func (s *boardService) CreateDefault(ctx context.Context) (*domain.Board, util.ApiError) {
-	newBoard := domain.Board{
-		Name: "Untitled",
+func (s *boardService) CreateDefault(ctx context.Context) (*string, util.ApiError) {
+	newBoard := &domain.Board{
+		Name:    "Untitled",
+		NoteIDs: []primitive.ObjectID{},
 	}
-	err := s.repo.Create(ctx, &newBoard)
+	insertedID, err := s.repo.Insert(ctx, newBoard)
 	if err != nil {
-		return nil, util.ToApiError(err)
+		return nil, err
 	}
 
-	return &newBoard, nil
+	return &insertedID, nil
 }
 
 func (s *boardService) GetAll(ctx context.Context) ([]domain.Board, util.ApiError) {
-	boards, err := s.repo.GetAll(ctx)
-	if err != nil {
-		return nil, util.ToApiError(err)
-	}
-
-	return boards, nil
+	return []domain.Board{}, nil
 }
 
 func (s *boardService) Get(ctx context.Context, id string) (*domain.Board, util.ApiError) {
-	board, err := s.repo.Get(ctx, id)
+	board, err := s.repo.FindOne(ctx, id)
 	if err != nil {
-		return nil, util.ToApiError(err)
+		return nil, err
 	}
 
 	if board == nil {
@@ -61,10 +60,10 @@ func (s *boardService) Get(ctx context.Context, id string) (*domain.Board, util.
 	return board, nil
 }
 
-func (s *boardService) Update(ctx context.Context, id string, newData domain.UpdateBoardRequest) util.ApiError {
-	err := s.repo.Update(ctx, id, newData)
+func (s *boardService) Update(ctx context.Context, id string, newData *domain.PutBoardRequest) util.ApiError {
+	err := s.repo.Update(ctx, id, helper.MapToBoard(newData))
 	if err != nil {
-		return util.NewApiError(http.StatusInternalServerError).WithMessage(err.Error())
+		return err
 	}
 
 	return nil
@@ -72,7 +71,7 @@ func (s *boardService) Update(ctx context.Context, id string, newData domain.Upd
 
 func (s *boardService) Delete(ctx context.Context, id string) util.ApiError {
 	if err := s.repo.Delete(ctx, id); err != nil {
-		return util.ToApiError(err)
+		return err
 	}
 
 	return nil

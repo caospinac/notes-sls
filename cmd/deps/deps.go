@@ -12,11 +12,15 @@ var (
 	NoteHandler  handler.NoteHandler
 )
 
-func init() {
-	dbClient := db.NewDynamoDBClient()
+const (
+	database = "notes-sls"
+)
 
-	boardRepo := repository.NewBoardRepo(dbClient)
-	noteRepo := repository.NewNoteRepo(dbClient)
+func init() {
+	dbClient := db.GetMongoDB(database)
+
+	boardRepo := repository.NewBoardsRepo(dbClient)
+	noteRepo := repository.NewNotesRepo(dbClient)
 
 	boardService := service.NewBoardService(boardRepo)
 	noteService := service.NewNoteService(noteRepo)

@@ -1,10 +1,10 @@
 package domain
 
-type UpdateBoardRequest struct {
-	Title string `json:"title"`
+type PutBoardRequest struct {
+	Name string `json:"name,omitempty"`
 }
 
-type UpdateNoteRequest struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
+type PutNoteRequest struct {
+	Title       string `json:"title,omitempty"`
+	Description string `json:"description,omitempty"`
 }

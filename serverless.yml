@@ -9,21 +9,7 @@ provider:
   region: us-east-1
   environment:
     REGION: ${self:provider.region}
-    DYNAMODB_TABLE_BOARDS: boards-${self:provider.stage}
-    DYNAMODB_TABLE_NOTES: notes-${self:provider.stage}
-
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:GetItem
-        - dynamodb:Query
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-        - dynamodb:Scan
-      Resource:
-        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_BOARDS}
-        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE_NOTES}
+    MONGODB_URI: ${param:mongodb_uri}
 
   httpApi:
     cors:
@@ -106,41 +92,3 @@ functions:
       - httpApi:
           path: /board/{boardID}/note/{noteID}
           method: delete
-
-resources:
-  Resources:
-    TableBoard:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-        KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_BOARDS}
-        StreamSpecification:
-          StreamViewType: NEW_IMAGE
-
-    TableNote:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        AttributeDefinitions:
-        - AttributeName: board_id
-          AttributeType: S
-        - AttributeName: note_id
-          AttributeType: S
-        KeySchema:
-        - AttributeName: board_id
-          KeyType: HASH
-        - AttributeName: note_id
-          KeyType: RANGE
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_NOTES}
-        StreamSpecification:
-          StreamViewType: NEW_IMAGE
