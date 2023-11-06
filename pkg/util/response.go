@@ -1,9 +1,5 @@
 package util
 
-import (
-	"encoding/json"
-)
-
 type Response interface {
 	WithBody(interface{}) Response
 	WithHeader(string, string) Response
@@ -39,16 +35,11 @@ func (b *responseBuilder) WithHeader(name, value string) Response {
 }
 
 func (b *responseBuilder) build() *EventResponse {
-	var responseBytes []byte
-
-	if !IsEmptyValue(b.body) {
-		responseBytes, _ = json.Marshal(b.body)
-	}
 
 	return &EventResponse{
 		StatusCode:      b.status,
 		IsBase64Encoded: false,
 		Headers:         b.headers,
-		Body:            string(responseBytes),
+		Body:            getBodyString(b.body),
 	}
 }

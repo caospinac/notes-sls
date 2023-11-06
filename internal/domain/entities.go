@@ -1,13 +1,16 @@
 package domain
 
+import "go.mongodb.org/mongo-driver/bson/primitive"
+
 type Board struct {
-	ID   string `json:"id" dynamodbav:"id"`
-	Name string `json:"title" dynamodbav:"title,omitempty"`
+	ID      primitive.ObjectID   `json:"_id" bson:"_id"`
+	NoteIDs []primitive.ObjectID `json:"note_ids" bson:"note_ids"`
+	Name    string               `json:"name" bson:"name"`
 }
 
 type Note struct {
-	BoardID     string `json:"board_id" dynamodbav:"board_id"`
-	NoteID      string `json:"note_id" dynamodbav:"note_id"`
-	Title       string `json:"title" dynamodbav:"title,omitempty"`
-	Description string `json:"description" dynamodbav:"description,omitempty"`
+	ID          primitive.ObjectID `json:"_id" bson:"_id"`
+	BoardID     primitive.ObjectID `json:"board_id" bson:"_id"`
+	Title       string             `json:"title" bson:"title"`
+	Description string             `json:"description" bson:"description"`
 }

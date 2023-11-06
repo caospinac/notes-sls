@@ -2,20 +2,21 @@ package db
 
 import (
 	"context"
-	"log"
 	"os"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func NewDynamoDBClient() *dynamodb.Client {
-	cfg, err := config.LoadDefaultConfig(context.TODO(), config.WithRegion(os.Getenv("REGION")))
+func GetMongoDB(database string) *mongo.Database {
+	serverAPI := options.ServerAPI(options.ServerAPIVersion1)
+	uri := os.Getenv("MONGODB_URI")
+	opts := options.Client().ApplyURI(uri).SetServerAPIOptions(serverAPI)
+
+	client, err := mongo.Connect(context.TODO(), opts)
 	if err != nil {
-		log.Fatalf("unable to load SDK config, %v", err)
+		panic(err)
 	}
 
-	db := dynamodb.NewFromConfig(cfg)
-
-	return db
+	return client.Database(database)
 }

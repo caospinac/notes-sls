@@ -56,13 +56,13 @@ func (handler noteHandler) GetAll(
 func (handler noteHandler) Update(
 	ctx context.Context, event util.EventRequest,
 ) (util.Response, util.ApiError) {
-	newData := new(domain.UpdateNoteRequest)
+	newData := new(domain.PutNoteRequest)
 
 	if err := json.Unmarshal([]byte(event.Body), newData); err != nil {
 		return nil, util.NewApiError(http.StatusBadRequest)
 	}
 
-	err := handler.service.Update(ctx, event.PathParameters["boardID"], event.PathParameters["noteID"], *newData)
+	err := handler.service.Update(ctx, event.PathParameters["noteID"], newData)
 	if err != nil {
 		return nil, err
 	}
