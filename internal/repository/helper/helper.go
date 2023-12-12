@@ -32,6 +32,10 @@ func FilterID(ID interface{}) bson.M {
 	return bson.M{"_id": ID}
 }
 
+func Set(in interface{}) bson.M {
+	return bson.M{"$set": in}
+}
+
 func WithSession(ctx context.Context, client *mongo.Client, fn func() error) util.ApiError {
 	session, err := client.StartSession()
 	if err != nil {

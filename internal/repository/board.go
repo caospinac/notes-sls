@@ -66,7 +66,7 @@ func (repo boardsRepo) Update(ctx context.Context, ID string, update *domain.Boa
 		return util.NewApiError(http.StatusBadRequest)
 	}
 
-	result := repo.collection.FindOneAndUpdate(ctx, helper.FilterID(objectID), update)
+	result := repo.collection.FindOneAndUpdate(ctx, helper.FilterID(objectID), helper.Set(update))
 
 	return helper.SingleResult(result, nil)
 }
