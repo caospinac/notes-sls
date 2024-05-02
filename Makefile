@@ -33,7 +33,7 @@ deploy-built:
 
 # deploy-function-{{functionName}}
 deploy-function-%: clean build
-	npx serverless deploy function -f $*
+	npx serverless deploy function -f $* --param="mongodb_uri=${MONGODB_URI}"
 	
 remove: clean
-	npx serverless remove --verbose
+	npx serverless remove --verbose --param="mongodb_uri=${MONGODB_URI}"
